@@ -1,0 +1,95 @@
+*{
+	outline: none;
+	font-family: sans-serif;
+}
+
+html, body{
+	width: 100%;
+	height: 100%;
+	margin: 0;
+}
+
+h1, h2, h3, h4, h5, h6{
+	text-align: center;
+	/*margin: 0 0 20px 0;*/
+}
+
+.container{
+	width: inherit;
+	height: inherit;
+	display: -webkit-flex;
+	display: -moz-flex;
+	display: -ms-flex;
+	display: -o-flex;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-flow: column;
+}
+
+.field{
+	display: -webkit-flex;
+	display: -moz-flex;
+	display: -ms-flex;
+	display: -o-flex;
+	display: flex;
+	flex-wrap: wrap;
+	width: 800px;
+	height: 800px;
+	border: 1px solid black;
+}
+
+.cell{
+	display: -webkit-flex;
+	display: -moz-flex;
+	display: -ms-flex;
+	display: -o-flex;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 78px;
+	height: 78px;
+	border: 1px solid black;
+}
+
+.borderless{
+	display: -webkit-flex;
+	display: -moz-flex;
+	display: -ms-flex;
+	display: -o-flex;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border: none;
+	width: 80px;
+	height: 80px;
+	background-image: url('../img/texture.jpg');
+	background-size: cover;
+	background-repeat: repeat;
+	color: #ffc300;
+	font-size: 25px;
+}
+
+.hidden{
+	visibility: hidden;
+}
+
+.white{
+	background-color: white;
+	border-radius: 50%;
+	width: inherit;
+	height: inherit;
+	transform: scale(0.75);
+}
+
+.black{
+	background-color: black;
+	border-radius: 50%;
+	width: inherit;
+	height: inherit;
+	transform: scale(0.75);
+}
+
+.selected{
+	border: 1px solid green;
+}
