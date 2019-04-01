@@ -144,41 +144,124 @@ function setPickedPiece() {
 }
 
 function getNextStep(cx, cy) {
-	var a_white_s = [$(`[posX = ${cx + 1}][posY = ${cy + 1}]`), $(`[posX = ${cx - 1}][posY = ${cy + 1}]`)],
-		a_black_s = [$(`[posX = ${cx + 1}][posY = ${cy - 1}]`), $(`[posX = ${cx - 1}][posY = ${cy - 1}]`)];
+	var a_front_s = [$(`[posX = ${cx + 1}][posY = ${cy + 1}]`), $(`[posX = ${cx - 1}][posY = ${cy + 1}]`)],
+		a_back_s = [$(`[posX = ${cx + 1}][posY = ${cy - 1}]`), $(`[posX = ${cx - 1}][posY = ${cy - 1}]`)];
+	var enemies = [];
 
 	for (var i = 1; i >= 0; i--) {
-		if (a_white_s[i] == undefined || a_white_s[i].children('div').hasClass('white')) {
-			a_white_s.splice(i, 1);
-		} else{
-			if (isWhite($('.selected'))) {
-				a_white_s[i].addClass('featured');
-			}
-		}
-
-		if (a_black_s[i] == undefined || a_black_s[i].children('div').hasClass('black')) {
-			a_black_s.splice(i, 1);
-		} else{
-			if (isBlack($('.selected'))) {
-				a_black_s[i].addClass('featured');
-			}
-		}
 		if (currColor == 'white') {
-			if (a_white_s[i].children() != undefined && a_white_s[i].children().hasClass('black')) {
-				var enemyX = +a_white_s[i].attr('posX'),
-					enemyY = +a_white_s[i].attr('posY');
-				console.log(`ENEMY: ${enemyX}  ${enemyY}`)
+			if (a_front_s[i] != undefined) {
+				if (a_front_s[i].children('div')[0] != undefined && a_front_s[i].children('div').hasClass('black')) {
+					var enemyX = +a_front_s[i].attr('posX');
+						enemyY = +a_front_s[i].attr('posY');
+					a_front_s.splice(i, 1);
+					enemies.push([enemyX, enemyY]);
+				}
 			}
-		} else{
-			if (a_black_s[i].children() != undefined && a_black_s[i].children().hasClass('white')) {
-				var enemyX = +a_black_s[i].attr('posX'),
-					enemyY = +a_black_s[i].attr('posY');
-				console.log(`ENEMY: ${enemyX}  ${enemyY}`)
+			if (a_back_s[i] != undefined) {
+				if (a_back_s[i].children('div')[0] != undefined && a_back_s[i].children('div').hasClass('black')) {
+					var enemyX = +a_back_s[i].attr('posX');
+						enemyY = +a_back_s[i].attr('posY');
+					a_back_s.splice(i, 1);
+					enemies.push([enemyX, enemyY]);
+				}
+			}
+		}
+		else if (currColor == 'black') {
+			if (a_front_s[i] != undefined) {
+				if (a_front_s[i].children('div')[0] != undefined && a_front_s[i].children('div').hasClass('white')) {
+					var enemyX = +a_front_s[i].attr('posX');
+						enemyY = +a_front_s[i].attr('posY');
+					a_front_s.splice(i, 1);
+					enemies.push([enemyX, enemyY]);
+				}
+			}
+			if (a_back_s[i] != undefined) {
+				if (a_back_s[i].children('div')[0] != undefined && a_back_s[i].children('div').hasClass('white')) {
+					var enemyX = +a_back_s[i].attr('posX'),
+						enemyY = +a_back_s[i].attr('posY');
+					a_back_s.splice(i, 1);
+					enemies.push([enemyX, enemyY]);
+				}
 			}
 		}
 	}
 
+	for (var i = enemies.length - 1; i >= 0; i--) {
+		var x = enemies[i][0],
+			y = enemies[i][1];
+		var result = getStepAfterEnemy(cx, cy, x, y);
+
+		if (result == false) {
+			result = undefined;
+			enemies.splice(i, 1);
+		}
+
+		if (isWhite($('.selected'))) {
+			a_front_s.push(result);
+		}
+		else if (isBlack($('.selected'))) {
+			a_back_s.push(result);
+		}
+	}
+
+	for (var i = 0; i < a_front_s.length; i++) {
+		if (a_front_s[i] == undefined || a_front_s[i].children('div').hasClass('white')) {
+			a_front_s.splice(i, 1);
+		}
+	}
+
+	for (var i = 0; i < a_back_s.length; i++) {
+		if (a_back_s[i] == undefined || a_back_s[i].children('div').hasClass('black')) {
+			a_back_s.splice(i, 1);
+		}
+	}
+
+	drawFeatured(a_front_s, a_back_s);
 	setFeaturedClickable();
+}
+
+function getStepAfterEnemy(cx, cy, ex, ey) {
+	if (ey == cy + 1 && ex == cx + 1) { //top right
+		var result = $(`[posX = ${ex + 1}][posY = ${ey + 1}]`);
+	}
+	else if (ey == cy + 1 && ex == cx - 1) { //top left
+		var result = $(`[posX = ${ex - 1}][posY = ${ey + 1}]`);
+		
+	}
+	else if (ey == cy - 1 && ex == cx + 1) { //bottom right
+		var result = $(`[posX = ${ex + 1}][posY = ${ey - 1}]`);
+	}
+	else if (ey == cy - 1 && ex == cx - 1) { //bottom left
+		var result = $(`[posX = ${ex - 1}][posY = ${ey - 1}]`);
+	}
+
+	if (result.children('div')[0] == undefined) {
+		result.addClass('kill');
+		result.attr({
+			killX: `${ex}`,
+			killY: `${ey}`
+		});
+		return result;
+	} else{
+		return false;
+	}
+}
+
+function drawFeatured(white, black) {
+	console.log(white);
+	console.log(black);
+	for (var i = 0; i < white.length; i++) {
+		if (isWhite($('.selected'))) {
+			white[i].addClass('featured');
+		}
+	}
+
+	for (var i = 0; i < black.length; i++) {
+		if (isBlack($('.selected'))) {
+			black[i].addClass('featured');
+		}
+	}
 }
 
 function setFeaturedClickable() {
@@ -186,6 +269,9 @@ function setFeaturedClickable() {
 	$('.featured').click(function(e) {
 		$('.selected').remove();
 		stepIn(this, currColor);
+		$('.kill').removeAttr('killX');
+		$('.kill').removeAttr('killY');
+		$('.kill').removeClass('kill');
 		turn++;
 		run(turn);
 	});
@@ -196,8 +282,10 @@ function stepIn(el, color) {
 	var x = +el.getAttribute('posX'),
 		y = +el.getAttribute('posY');
 	var next = $(`[posX = ${x}][posY = ${y}]`);
-	if (next[0] != undefined) {
-		next.empty();
+	if (next.hasClass('kill')) {
+		var killX = +next.attr('killX'),
+			killY = +next.attr('killY');
+		$(`[posX = ${killX}][posY = ${killY}]`).empty();
 	}
 	next.append(`<div class = "${color}"></div>`);
 }
@@ -212,7 +300,7 @@ function getWinner() {
 
 function setWinner() {
 	var winner = getWinner();
-	$('h1').html(`<b>Winner:</b>${winner}`);
+	$('h1').html(`<b>Winner: </b>${winner}`);
 }
 
 function endGame() {
@@ -221,4 +309,7 @@ function endGame() {
 	$('h1').remove();
 	$('*').unbind();
 	console.log('Game ended');
+	if (confirm('Start again?')) {
+		startGame();
+	}
 }

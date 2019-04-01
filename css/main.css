@@ -11,7 +11,6 @@ html, body{
 
 h1, h2, h3, h4, h5, h6{
 	text-align: center;
-	/*margin: 0 0 20px 0;*/
 }
 
 .container{
@@ -91,7 +90,6 @@ h1, h2, h3, h4, h5, h6{
 }
 
 .selected{
-	/*border: 1px solid green;*/
 	opacity: 0.7;
 }
 
@@ -105,4 +103,5 @@ h1, h2, h3, h4, h5, h6{
 	width: inherit;
 	height: inherit;
 	background-color: green;
+	cursor: pointer;
 }
