@@ -1,6 +1,5 @@
 $(document).ready(function() {
 	drawCells();
-	spawnCheckers();
 	startGame();
 });
 
@@ -68,31 +67,158 @@ function spawnCheckers() {
 	}
 }
 
-function getX(el) {
-	 return +el.parent().attr('posX');
+function getX() {
+	return +$(`.selected`).parent().attr('posX');
 }
 
-function getY(el) {
-	 return +el.parent().attr('posY');
+function getY() {
+	return +$(`.selected`).parent().attr('posY');
 }
 
+function isWhite(el) {
+	return el.hasClass('white');
+}
+
+function isBlack(el) {
+	return el.hasClass('black');
+}
+
+var gameOn = true;
+var turn = 1;
+var currColor = false;
 
 function startGame() {
-	var turn = 1;
+	spawnCheckers();
 	$('.container').prepend('<h1></h1>');
-	var gameOn = true;
+
+	run(turn);
+}
+
+function run(turn) {
+	$('*').unbind();
+	$('.selected').removeClass('selected');
+	$('.available_to_choose').removeClass('available_to_choose');
 
 	if ($('.white').eq(0)[0] == undefined || $('.black').eq(0)[0] == undefined) {
 		gameOn = false;
-	}
-
-	run(turn);
-
-	function run(turn) {
+	} else{
 		if (turn % 2 != 0) {
-			$('h1').html('White turn');
+			WhiteTurn();
 		} else{
-			$('h1').html('Black turn');
-		} 
+			BlackTurn();
+		}
 	}
+
+	if (gameOn == false) {
+		setWinner();
+		setTimeout(endGame, 2000);
+	}
+}
+
+function WhiteTurn() {
+	$('h1').html('Turn: white');
+	$('.white').addClass('available_to_choose');
+	currColor = 'white';
+
+	setPickedPiece();
+}
+
+function BlackTurn() {
+	$('h1').html('Turn: black');
+	$('.black').addClass('available_to_choose');
+	currColor = 'black';
+
+	setPickedPiece();	
+}
+
+var pickedPiece;
+
+function setPickedPiece() {
+	$('.available_to_choose').on('click', function(e) {
+		$('.selected').removeClass('selected')
+		$('.featured').removeClass('featured');
+		$(this).addClass('selected');
+		getNextStep(getX(), getY());
+		pickedPiece = this;
+	});
+}
+
+function getNextStep(cx, cy) {
+	var a_white_s = [$(`[posX = ${cx + 1}][posY = ${cy + 1}]`), $(`[posX = ${cx - 1}][posY = ${cy + 1}]`)],
+		a_black_s = [$(`[posX = ${cx + 1}][posY = ${cy - 1}]`), $(`[posX = ${cx - 1}][posY = ${cy - 1}]`)];
+
+	for (var i = 1; i >= 0; i--) {
+		if (a_white_s[i] == undefined || a_white_s[i].children('div').hasClass('white')) {
+			a_white_s.splice(i, 1);
+		} else{
+			if (isWhite($('.selected'))) {
+				a_white_s[i].addClass('featured');
+			}
+		}
+
+		if (a_black_s[i] == undefined || a_black_s[i].children('div').hasClass('black')) {
+			a_black_s.splice(i, 1);
+		} else{
+			if (isBlack($('.selected'))) {
+				a_black_s[i].addClass('featured');
+			}
+		}
+		if (currColor == 'white') {
+			if (a_white_s[i].children() != undefined && a_white_s[i].children().hasClass('black')) {
+				var enemyX = +a_white_s[i].attr('posX'),
+					enemyY = +a_white_s[i].attr('posY');
+				console.log(`ENEMY: ${enemyX}  ${enemyY}`)
+			}
+		} else{
+			if (a_black_s[i].children() != undefined && a_black_s[i].children().hasClass('white')) {
+				var enemyX = +a_black_s[i].attr('posX'),
+					enemyY = +a_black_s[i].attr('posY');
+				console.log(`ENEMY: ${enemyX}  ${enemyY}`)
+			}
+		}
+	}
+
+	setFeaturedClickable();
+}
+
+function setFeaturedClickable() {
+	$('.featured').unbind();
+	$('.featured').click(function(e) {
+		$('.selected').remove();
+		stepIn(this, currColor);
+		turn++;
+		run(turn);
+	});
+}
+
+function stepIn(el, color) {
+	$('.featured').removeClass('featured');
+	var x = +el.getAttribute('posX'),
+		y = +el.getAttribute('posY');
+	var next = $(`[posX = ${x}][posY = ${y}]`);
+	if (next[0] != undefined) {
+		next.empty();
+	}
+	next.append(`<div class = "${color}"></div>`);
+}
+
+function getWinner() {
+	if ($('.white').eq(0)[0] == undefined) {
+		return 'black';
+	} else if ($('.black').eq(0)[0] == undefined) {
+		return 'white';
+	}
+}
+
+function setWinner() {
+	var winner = getWinner();
+	$('h1').html(`<b>Winner:</b>${winner}`);
+}
+
+function endGame() {
+	$('.white').remove();
+	$('.black').remove();
+	$('h1').remove();
+	$('*').unbind();
+	console.log('Game ended');
 }
