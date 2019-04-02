@@ -88,6 +88,7 @@ var turn = 1;
 var currColor = false;
 
 function startGame() {
+	turn = 1;
 	spawnCheckers();
 	$('.container').prepend('<h1></h1>');
 
@@ -135,7 +136,8 @@ var pickedPiece;
 
 function setPickedPiece() {
 	$('.available_to_choose').on('click', function(e) {
-		$('.selected').removeClass('selected')
+		$('.selected').removeClass('selected');
+		$('.featured').unbind();
 		$('.featured').removeClass('featured');
 		$(this).addClass('selected');
 		getNextStep(getX(), getY());
@@ -146,79 +148,53 @@ function setPickedPiece() {
 function getNextStep(cx, cy) {
 	var a_front_s = [$(`[posX = ${cx + 1}][posY = ${cy + 1}]`), $(`[posX = ${cx - 1}][posY = ${cy + 1}]`)],
 		a_back_s = [$(`[posX = ${cx + 1}][posY = ${cy - 1}]`), $(`[posX = ${cx - 1}][posY = ${cy - 1}]`)];
-	var enemies = [];
 
-	for (var i = 1; i >= 0; i--) {
-		if (currColor == 'white') {
-			if (a_front_s[i] != undefined) {
-				if (a_front_s[i].children('div')[0] != undefined && a_front_s[i].children('div').hasClass('black')) {
-					var enemyX = +a_front_s[i].attr('posX');
-						enemyY = +a_front_s[i].attr('posY');
-					a_front_s.splice(i, 1);
-					enemies.push([enemyX, enemyY]);
-				}
-			}
-			if (a_back_s[i] != undefined) {
-				if (a_back_s[i].children('div')[0] != undefined && a_back_s[i].children('div').hasClass('black')) {
-					var enemyX = +a_back_s[i].attr('posX');
-						enemyY = +a_back_s[i].attr('posY');
-					a_back_s.splice(i, 1);
-					enemies.push([enemyX, enemyY]);
-				}
-			}
-		}
-		else if (currColor == 'black') {
-			if (a_front_s[i] != undefined) {
-				if (a_front_s[i].children('div')[0] != undefined && a_front_s[i].children('div').hasClass('white')) {
-					var enemyX = +a_front_s[i].attr('posX');
-						enemyY = +a_front_s[i].attr('posY');
-					a_front_s.splice(i, 1);
-					enemies.push([enemyX, enemyY]);
-				}
-			}
-			if (a_back_s[i] != undefined) {
-				if (a_back_s[i].children('div')[0] != undefined && a_back_s[i].children('div').hasClass('white')) {
-					var enemyX = +a_back_s[i].attr('posX'),
-						enemyY = +a_back_s[i].attr('posY');
-					a_back_s.splice(i, 1);
-					enemies.push([enemyX, enemyY]);
-				}
-			}
-		}
-	}
+	//check for undefined values
 
-	for (var i = enemies.length - 1; i >= 0; i--) {
-		var x = enemies[i][0],
-			y = enemies[i][1];
-		var result = getStepAfterEnemy(cx, cy, x, y);
-
-		if (result == false) {
-			result = undefined;
-			enemies.splice(i, 1);
-		}
-
-		if (isWhite($('.selected'))) {
-			a_front_s.push(result);
-		}
-		else if (isBlack($('.selected'))) {
-			a_back_s.push(result);
-		}
-	}
-
-	for (var i = 0; i < a_front_s.length; i++) {
-		if (a_front_s[i] == undefined || a_front_s[i].children('div').hasClass('white')) {
+	for (var i = a_front_s.length - 1; i >= 0; i--) {
+		if (a_front_s[i].length == 0 || a_front_s[i].children().hasClass(`${currColor}`)) {
 			a_front_s.splice(i, 1);
 		}
 	}
 
-	for (var i = 0; i < a_back_s.length; i++) {
-		if (a_back_s[i] == undefined || a_back_s[i].children('div').hasClass('black')) {
+	for (var i = a_back_s.length - 1; i >= 0; i--) {
+		if (a_back_s[i].length == 0 || a_back_s[i].children().hasClass(`${currColor}`)) {
 			a_back_s.splice(i, 1);
 		}
 	}
 
+	var a_all_s = a_front_s.concat(a_back_s);
+
+	var enemies = getEnemies(cx, cy, a_all_s);
+
+	for (var i = a_front_s.length - 1; i >= 0; i--) {
+		for (var j = 0; j < enemies.length; j++) {
+			if (a_front_s[i].eq(0) == enemies[j].eq(0)) {
+				a_front_s[i].splice(i, 1);
+				console.log('Gotcha');
+				break;
+			}
+		}
+	}
+
+	var a_kill_s;
+
 	drawFeatured(a_front_s, a_back_s);
 	setFeaturedClickable();
+}
+
+function getEnemies(cx, cy, steps) {
+	var result = [];
+	var available_enemies = steps;
+
+	for (var i = 0; i < available_enemies.length; i++) {
+		var ae = available_enemies[i];
+		if (ae.children('div')[0] != undefined && !ae.children('div').hasClass(`${currColor}`)) {
+			result.push(ae);
+		}
+	}
+
+	return result;
 }
 
 function getStepAfterEnemy(cx, cy, ex, ey) {
@@ -249,8 +225,8 @@ function getStepAfterEnemy(cx, cy, ex, ey) {
 }
 
 function drawFeatured(white, black) {
-	console.log(white);
-	console.log(black);
+	// console.log(white);
+	// console.log(black);
 	for (var i = 0; i < white.length; i++) {
 		if (isWhite($('.selected'))) {
 			white[i].addClass('featured');
@@ -309,7 +285,9 @@ function endGame() {
 	$('h1').remove();
 	$('*').unbind();
 	console.log('Game ended');
-	if (confirm('Start again?')) {
-		startGame();
-	}
+	setTimeout(() => {
+		if (confirm('Start again?')) {
+			startGame();
+		}
+	}, 200)
 }
