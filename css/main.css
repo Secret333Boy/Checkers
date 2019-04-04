@@ -78,7 +78,7 @@ h1, h2, h3, h4, h5, h6{
 	border-radius: 50%;
 	width: inherit;
 	height: inherit;
-	transform: scale(0.75);
+	transform: scale(0.8);
 }
 
 .black{
@@ -86,7 +86,17 @@ h1, h2, h3, h4, h5, h6{
 	border-radius: 50%;
 	width: inherit;
 	height: inherit;
-	transform: scale(0.75);
+	transform: scale(0.8);
+}
+
+.white.damka{
+	background-image: url("../img/white_damka.png");
+	background-size: cover;
+}
+
+.black.damka{
+	background-image: url("../img/black_damka.png");
+	background-size: cover;
 }
 
 .selected{
