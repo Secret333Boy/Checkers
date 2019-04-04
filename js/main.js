@@ -145,41 +145,85 @@ function setPickedPiece() {
 	});
 }
 
+function getAvailableSteps(cx, cy) {
+	return [[$(`[posX = ${cx + 1}][posY = ${cy + 1}]`), $(`[posX = ${cx - 1}][posY = ${cy + 1}]`)], 
+			[$(`[posX = ${cx + 1}][posY = ${cy - 1}]`), $(`[posX = ${cx - 1}][posY = ${cy - 1}]`)]];
+}
+
+function getAllSteps(cx, cy) {
+	return getAvailableSteps(cx, cy)[0].concat(getAvailableSteps(cx, cy)[1]);
+}
+
 function getNextStep(cx, cy) {
-	var a_front_s = [$(`[posX = ${cx + 1}][posY = ${cy + 1}]`), $(`[posX = ${cx - 1}][posY = ${cy + 1}]`)],
-		a_back_s = [$(`[posX = ${cx + 1}][posY = ${cy - 1}]`), $(`[posX = ${cx - 1}][posY = ${cy - 1}]`)];
+
+	var a_front_s = getAvailableSteps(cx, cy)[0],
+		a_back_s = getAvailableSteps(cx, cy)[1];
 
 	//check for undefined values
 
+	var color = currColor;
+
 	for (var i = a_front_s.length - 1; i >= 0; i--) {
-		if (a_front_s[i].length == 0 || a_front_s[i].children().hasClass(`${currColor}`)) {
+		if (a_front_s[i].length == 0 || a_front_s[i].children().hasClass(`${color}`)) {
 			a_front_s.splice(i, 1);
 		}
 	}
 
 	for (var i = a_back_s.length - 1; i >= 0; i--) {
-		if (a_back_s[i].length == 0 || a_back_s[i].children().hasClass(`${currColor}`)) {
+		if (a_back_s[i].length == 0 || a_back_s[i].children().hasClass(`${color}`)) {
 			a_back_s.splice(i, 1);
 		}
 	}
 
-	var a_all_s = a_front_s.concat(a_back_s);
+	//get enemies near the selected piece
+
+	var a_all_s = getAllSteps(cx, cy);
 
 	var enemies = getEnemies(cx, cy, a_all_s);
 
+
+	//delete featured cells on the enemy position
+
 	for (var i = a_front_s.length - 1; i >= 0; i--) {
 		for (var j = 0; j < enemies.length; j++) {
-			if (a_front_s[i].eq(0) == enemies[j].eq(0)) {
-				a_front_s[i].splice(i, 1);
-				console.log('Gotcha');
-				break;
+			if (a_front_s[i] != undefined) {
+				if (a_front_s[i].get(0) == enemies[j].get(0)) {
+					a_front_s.splice(i, 1);
+				}
 			}
 		}
 	}
 
-	var a_kill_s;
+	for (var i = a_back_s.length - 1; i >= 0; i--) {
+		for (var j = 0; j < enemies.length; j++) {
+			if (a_back_s[i] != undefined) {
+				if (a_back_s[i].get(0) == enemies[j].get(0)) {
+					a_back_s.splice(i, 1);
+				}
+			}
+		}
+	}
 
-	drawFeatured(a_front_s, a_back_s);
+	//get steps after the enemy and checking for undefined values
+
+	var a_kill_s = [];
+	for (var i = 0; i < enemies.length; i++) {
+		var ex = +enemies[i].attr('posX'),
+			ey = +enemies[i].attr('posY');
+		if (getStepAfterEnemy(cx, cy, ex, ey) != false) {
+			a_kill_s.push(getStepAfterEnemy(cx, cy, ex, ey));
+		}
+	}
+
+	// console.log('ENEMIES');
+	// console.log(enemies);
+	// console.log('Front steps:');
+	// console.log(a_front_s);
+	// console.log('Back steps:');
+	// console.log(a_back_s);
+	// console.log('\n');
+
+	drawFeatured(a_front_s, a_back_s, a_kill_s);
 	setFeaturedClickable();
 }
 
@@ -189,7 +233,7 @@ function getEnemies(cx, cy, steps) {
 
 	for (var i = 0; i < available_enemies.length; i++) {
 		var ae = available_enemies[i];
-		if (ae.children('div')[0] != undefined && !ae.children('div').hasClass(`${currColor}`)) {
+		if (ae.children()[0] != undefined && !ae.children('div').hasClass(`${currColor}`)) {
 			result.push(ae);
 		}
 	}
@@ -212,7 +256,7 @@ function getStepAfterEnemy(cx, cy, ex, ey) {
 		var result = $(`[posX = ${ex - 1}][posY = ${ey - 1}]`);
 	}
 
-	if (result.children('div')[0] == undefined) {
+	if (result.children().get(0) == undefined && result.get(0) != undefined) {
 		result.addClass('kill');
 		result.attr({
 			killX: `${ex}`,
@@ -224,19 +268,23 @@ function getStepAfterEnemy(cx, cy, ex, ey) {
 	}
 }
 
-function drawFeatured(white, black) {
-	// console.log(white);
-	// console.log(black);
-	for (var i = 0; i < white.length; i++) {
-		if (isWhite($('.selected'))) {
-			white[i].addClass('featured');
+function drawFeatured(white, black, kill_steps) {
+	if (kill_steps[0] == undefined) {
+		for (var i = 0; i < white.length; i++) {
+			if (isWhite($('.selected'))) {
+				white[i].addClass('featured');
+			}
+		}
+
+		for (var i = 0; i < black.length; i++) {
+			if (isBlack($('.selected'))) {
+				black[i].addClass('featured');
+			}
 		}
 	}
-
-	for (var i = 0; i < black.length; i++) {
-		if (isBlack($('.selected'))) {
-			black[i].addClass('featured');
-		}
+	
+	for (var i = 0; i < kill_steps.length; i++) {
+		kill_steps[i].addClass('featured');
 	}
 }
 
@@ -244,12 +292,14 @@ function setFeaturedClickable() {
 	$('.featured').unbind();
 	$('.featured').click(function(e) {
 		$('.selected').remove();
-		stepIn(this, currColor);
-		$('.kill').removeAttr('killX');
-		$('.kill').removeAttr('killY');
-		$('.kill').removeClass('kill');
-		turn++;
-		run(turn);
+		var _continue = stepIn(this, currColor);
+		if (_continue) {
+			$('.kill').removeAttr('killX');
+			$('.kill').removeAttr('killY');
+			$('.kill').removeClass('kill');
+			turn++;
+			run(turn);
+		}
 	});
 }
 
@@ -258,18 +308,58 @@ function stepIn(el, color) {
 	var x = +el.getAttribute('posX'),
 		y = +el.getAttribute('posY');
 	var next = $(`[posX = ${x}][posY = ${y}]`);
+	var _continue = true;
+	next.append(`<div class = "${color}"></div>`);
+
 	if (next.hasClass('kill')) {
 		var killX = +next.attr('killX'),
 			killY = +next.attr('killY');
 		$(`[posX = ${killX}][posY = ${killY}]`).empty();
+
+		if (hasMoreAvailableKills(x, y)) {
+			var enemies = getEnemies(x, y, getAllSteps(x, y)), kill_steps = [];
+
+			_continue = false;
+
+			for (var i = 0; i < enemies.length; i++) {
+				var ex = +enemies[i].attr('posX'),
+					ey = +enemies[i].attr('posY');
+				if (getStepAfterEnemy(x, y, ex, ey)) {
+					kill_steps.push(getStepAfterEnemy(x, y, ex, ey));
+				}
+			}
+
+			$('.available_to_choose').unbind();
+
+			next.children().addClass('selected');
+
+			drawFeatured([], [], kill_steps);
+			setFeaturedClickable();
+		}
 	}
-	next.append(`<div class = "${color}"></div>`);
+
+	return _continue;
+}
+
+function hasMoreAvailableKills(x, y) {
+	var enemies = getEnemies(x, y, getAllSteps(x, y));
+	var result = false;
+
+	for (var i = 0; i < enemies.length; i++) {
+		var ex = +enemies[i].attr('posX'),
+			ey = +enemies[i].attr('posY');
+		if (getStepAfterEnemy(x, y, ex, ey)) {
+			result = true;
+		}
+	}
+
+	return result;
 }
 
 function getWinner() {
-	if ($('.white').eq(0)[0] == undefined) {
+	if ($('.white').eq(0).get(0) == undefined) {
 		return 'black';
-	} else if ($('.black').eq(0)[0] == undefined) {
+	} else if ($('.black').eq(0).get(0) == undefined) {
 		return 'white';
 	}
 }
@@ -285,6 +375,7 @@ function endGame() {
 	$('h1').remove();
 	$('*').unbind();
 	console.log('Game ended');
+	turn = 1;
 	setTimeout(() => {
 		if (confirm('Start again?')) {
 			startGame();
