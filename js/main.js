@@ -133,16 +133,48 @@ function WhiteTurn() {
 	$('h1').html('Turn: white');
 	$('.white').addClass('available_to_choose');
 	currColor = 'white';
-
-	setPickedPiece();
+	if (!SmthHasEnemy()) {
+		setPickedPiece();
+	}
 }
 
 function BlackTurn() {
 	$('h1').html('Turn: black');
 	$('.black').addClass('available_to_choose');
 	currColor = 'black';
+	SmthHasEnemy()
+	if (!SmthHasEnemy()) {
+		setPickedPiece();	
+	}
+}
 
-	setPickedPiece();	
+function SmthHasEnemy() {
+	var arr = $('.available_to_choose').parent(), result = false, a_kill_s = [];
+		console.clear();
+
+	for (var i = 0; i < arr.length; i++) {
+		var x = +arr.eq(i).attr('posX'), y = +arr.eq(i).attr('posY');
+		var enemies = getEnemies(x, y, getAllSteps(x, y));
+
+		for (var j = 0; j < enemies.length; j++) {
+			var ex = +enemies[j].attr('posX'),
+				ey = +enemies[j].attr('posY');
+			if (getStepAfterEnemy(x, y, ex, ey) != false) {
+				a_kill_s.push(getStepAfterEnemy(x, y, ex, ey));
+			}
+		}
+
+		if (enemies[0] != undefined && a_kill_s[0] != undefined) {
+			result = true;
+			a_kill_s = [];
+
+			$('.available_to_choose').removeClass('available_to_choose');
+			$(`[posX = ${x}][posY = ${y}]`).children().addClass('available_to_choose');
+			setPickedPiece();
+		}
+	}
+
+	return result;
 }
 
 var pickedPiece;
