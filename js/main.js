@@ -150,6 +150,7 @@ var pickedPiece;
 function setPickedPiece() {
 	$('.available_to_choose').on('click', function(e) {
 		$('.selected').removeClass('selected');
+		$('.kill').removeClass('kill');
 		$('.featured').unbind();
 		$('.featured').removeClass('featured');
 		$(this).addClass('selected');
@@ -169,121 +170,41 @@ function getAllSteps(cx, cy) {
 
 function getDamkaSteps(cx, cy) {
 	var result = [], state = true, _continue = true;
-
+	var vars = [[1, 1], [-1, -1], [1, -1], [-1, 1]];
 	var n = 1, h = 1;
-	while (state && _continue) { //go to the left bottom corner
-		var ax = cx - n;
-		n++;
-		var ay = cy - h;
-		h++;
-		var thisEl = $(`[posX = ${ax}][posY = ${ay}]`);
 
-		if (thisEl.get(0) == undefined) {
-			state = false;
-		} else{
-			result.push(thisEl);
-		}
+	for (var i = 0; i < vars.length; i++) {
+		while (state && _continue) {
+			var ax = cx - n * vars[i][0];
+			n++;
+			var ay = cy - h * vars[i][1];
+			h++;
+			var thisEl = $(`[posX = ${ax}][posY = ${ay}]`);
 
-		if (thisEl.children().get(0) != undefined && !thisEl.children().hasClass(`${currColor}`)) {
-			if (getStepAfterEnemy(ax + 1, ay + 1, ax, ay)) {
-				drawFeatured([], [], [$(`[posX = ${ax - 1}][posY = ${ay - 1}]`)], []);
-				setFeaturedClickable();
-				result = [];
-				_continue = false;
+			if (thisEl.get(0) == undefined) {
+				state = false;
+			} else{
+				result.push(thisEl);
+			}
+
+			if (thisEl.children().get(0) != undefined && !thisEl.children().hasClass(`${currColor}`)) {
+				if (getStepAfterEnemy(ax + vars[i][0], ay + vars[i][1], ax, ay)) {
+					drawFeatured([], [], [$(`[posX = ${ax - vars[i][0]}][posY = ${ay - vars[i][1]}]`)], []);
+					setFeaturedClickable();
+					result = [];
+					_continue = false;
+					break;
+				}
+			}
+			else if (thisEl.children().hasClass(`${currColor}`)) {
+				result.pop();
 				break;
 			}
 		}
-		else if (thisEl.children().hasClass(`${currColor}`)) {
-			result.pop();
-			break;
-		}
-	}
 
-	n = 1; h = 1; state = true;
-	while (state && _continue) { //go to the rigth top corner
-		var ax = cx + n;
-		n++;
-		var ay = cy + h;
-		h++;
-		var thisEl = $(`[posX = ${ax}][posY = ${ay}]`);
-
-		if (thisEl.get(0) == undefined) {
-			state = false;
-		} else{
-			result.push(thisEl);
-		}
-
-		if (thisEl.children().get(0) != undefined && !thisEl.children().hasClass(`${currColor}`)) {
-			if (getStepAfterEnemy(ax - 1, ay - 1, ax, ay)) {
-				drawFeatured([], [], [$(`[posX = ${ax + 1}][posY = ${ay + 1}]`)], []);
-				setFeaturedClickable();
-				result = [];
-				_continue = false;
-				break;
-			} 
-		}
-		else if (thisEl.children().hasClass(`${currColor}`)) {
-			result.pop();
-			break;
-		}
-	}
-
-	n = 1; h = 1; state = true;
-	while (state && _continue) { //go to the left top corner
-		var ax = cx - n;
-		n++;
-		var ay = cy + h;
-		h++;
-		var thisEl = $(`[posX = ${ax}][posY = ${ay}]`);
-
-		if (thisEl.get(0) == undefined) {
-			state = false;
-		} else{
-			result.push(thisEl);
-		}
-
-		if (thisEl.children().get(0) != undefined && !thisEl.children().hasClass(`${currColor}`)) {
-			if (getStepAfterEnemy(ax + 1, ay - 1, ax, ay)) {
-				drawFeatured([], [], [$(`[posX = ${ax - 1}][posY = ${ay + 1}]`)], []);
-				setFeaturedClickable();
-				result = [];
-				_continue = false;
-				break;
-			}
-		}
-		else if (thisEl.children().hasClass(`${currColor}`)) {
-			result.pop();
-			break;
-		}
-	}
-
-	n = 1; h = 1; state = true;
-	while (state && _continue) { //go to the tight bottom corner
-		var ax = cx + n;
-		n++;
-		var ay = cy - h;
-		h++;
-		var thisEl = $(`[posX = ${ax}][posY = ${ay}]`);
-
-		if (thisEl.get(0) == undefined) {
-			state = false;
-		} else{
-			result.push(thisEl);
-		}
-
-		if (thisEl.children().get(0) != undefined && !thisEl.children().hasClass(`${currColor}`)) {
-			if (getStepAfterEnemy(ax - 1, ay + 1, ax, ay)) {
-				drawFeatured([], [], [$(`[posX = ${ax + 1}][posY = ${ay - 1}]`)], []);
-				setFeaturedClickable();
-				result = [];
-				_continue = false;
-				break;
-			}
-		}
-		else if (thisEl.children().hasClass(`${currColor}`)) {
-			result.pop();
-			break;
-		}
+		state = true;
+		n = 1; 
+		h = 1;
 	}
 
 	return result;
@@ -295,6 +216,8 @@ function getNextStep(cx, cy) {
 		var a_damka_s = [],
 			a_front_s = getAvailableSteps(cx, cy)[0],
 			a_back_s = getAvailableSteps(cx, cy)[1];
+
+		//check for undefined values
 
 		for (var i = a_front_s.length - 1; i >= 0; i--) {
 			if (a_front_s[i].get(0) == undefined || a_front_s[i].children().hasClass(`${currColor}`)) {
@@ -370,15 +293,15 @@ function getNextStep(cx, cy) {
 		}
 	}
 
-	console.log('ENEMIES');
-	console.log(enemies);
-	console.log('Front steps:');
-	console.log(a_front_s);
-	console.log('Back steps:');
-	console.log(a_back_s);
-	console.log('Damka steps:');
-	console.log(a_damka_s);
-	console.log('\n');
+	// console.log('ENEMIES');
+	// console.log(enemies);
+	// console.log('Front steps:');
+	// console.log(a_front_s);
+	// console.log('Back steps:');
+	// console.log(a_back_s);
+	// console.log('Damka steps:');
+	// console.log(a_damka_s);
+	// console.log('\n');
 
 	drawFeatured(a_front_s, a_back_s, a_kill_s, a_damka_s);
 	setFeaturedClickable();
@@ -452,8 +375,9 @@ function drawFeatured(white, black, kill_steps, damka_steps = []) {
 function setFeaturedClickable() {
 	$('.featured').unbind();
 	$('.featured').click(function(e) {
-		var _continue = stepIn(this, currColor);
+		var is_damka = isDamka();
 		$('.selected').remove();
+		var _continue = stepIn(this, currColor, is_damka);
 		if (_continue) {
 			$('.kill').removeAttr('killX');
 			$('.kill').removeAttr('killY');
@@ -464,21 +388,21 @@ function setFeaturedClickable() {
 	});
 }
 
-function stepIn(el, color) {
+function stepIn(el, color, is_damka) {
 	$('.featured').removeClass('featured');
 	var x = +el.getAttribute('posX'),
 		y = +el.getAttribute('posY');
 	var next = $(`[posX = ${x}][posY = ${y}]`);
 	var _continue = true;
 
-	if (isWhite() && y == 8 && !isDamka()) {
+	if (isWhite() && y == 8 && !is_damka) {
 		$('.selected').addClass('damka');
 	}
-	if (isBlack() && y == 1 && !isDamka()) {
+	if (isBlack() && y == 1 && !is_damka) {
 		$('.selected').addClass('damka');
 	}
 
-	if (isDamka()) {
+	if (is_damka) {
 		next.append(`<div class = "${color} damka"></div>`);
 	} else{
 		next.append(`<div class = "${color}"></div>`);
