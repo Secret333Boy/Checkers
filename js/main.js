@@ -102,7 +102,7 @@ var currColor = false;
 
 function startGame() {
 	turn = 1;
-	spawnCheckers();
+	spawnCheckers(12);
 	$('.container').prepend('<h1></h1>');
 
 	run(turn);
@@ -112,6 +112,7 @@ function run(turn) {
 	$('*').unbind();
 	$('.selected').removeClass('selected');
 	$('.available_to_choose').removeClass('available_to_choose');
+	$('.must_to_choose').removeClass('must_to_choose');
 
 	if ($('.white').eq(0)[0] == undefined || $('.black').eq(0)[0] == undefined) {
 		gameOn = false;
@@ -150,7 +151,6 @@ function BlackTurn() {
 
 function SmthHasEnemy() {
 	var arr = $('.available_to_choose').parent(), result = false, a_kill_s = [];
-		console.clear();
 
 	for (var i = 0; i < arr.length; i++) {
 		var x = +arr.eq(i).attr('posX'), y = +arr.eq(i).attr('posY');
@@ -168,9 +168,17 @@ function SmthHasEnemy() {
 			result = true;
 			a_kill_s = [];
 
-			$('.available_to_choose').removeClass('available_to_choose');
-			$(`[posX = ${x}][posY = ${y}]`).children().addClass('available_to_choose');
+			$(`.available_to_choose`).removeClass('available_to_choose');
+			$(`[posX = ${x}][posY = ${y}]`).children().addClass('must_to_choose');
 			setPickedPiece();
+		}
+
+		if (isDamka(arr.eq(i).children())) {
+			var damka_steps = getDamkaSteps(x, y);
+			if (damka_steps.length <= 4) {
+				$('.available_to_choose').removeClass('available_to_choose');
+				$(`[posX = ${x}][posY = ${y}]`).children().addClass('must_to_choose');
+			}
 		}
 	}
 
@@ -180,7 +188,7 @@ function SmthHasEnemy() {
 var pickedPiece;
 
 function setPickedPiece() {
-	$('.available_to_choose').on('click', function(e) {
+	$('.available_to_choose, .must_to_choose').on('click', function(e) {
 		$('.selected').removeClass('selected');
 		$('.kill').removeClass('kill');
 		$('.featured').unbind();
@@ -221,9 +229,8 @@ function getDamkaSteps(cx, cy) {
 
 			if (thisEl.children().get(0) != undefined && !thisEl.children().hasClass(`${currColor}`)) {
 				if (getStepAfterEnemy(ax + vars[i][0], ay + vars[i][1], ax, ay)) {
-					drawFeatured([], [], [$(`[posX = ${ax - vars[i][0]}][posY = ${ay - vars[i][1]}]`)], []);
-					setFeaturedClickable();
-					result = [];
+					// drawFeatured([], [], [$(`[posX = ${ax - vars[i][0]}][posY = ${ay - vars[i][1]}]`)], []);
+					result = [$(`[posX = ${ax - vars[i][0]}][posY = ${ay - vars[i][1]}]`)];
 					_continue = false;
 					break;
 				}
@@ -408,8 +415,12 @@ function setFeaturedClickable() {
 	$('.featured').unbind();
 	$('.featured').click(function(e) {
 		var is_damka = isDamka();
+		var is_white = isWhite();
+		var is_black = isBlack();
+
+
 		$('.selected').remove();
-		var _continue = stepIn(this, currColor, is_damka);
+		var _continue = stepIn(this, currColor, is_white, is_black, is_damka);
 		if (_continue) {
 			$('.kill').removeAttr('killX');
 			$('.kill').removeAttr('killY');
@@ -420,19 +431,13 @@ function setFeaturedClickable() {
 	});
 }
 
-function stepIn(el, color, is_damka) {
+function stepIn(el, color, is_white, is_black, is_damka) {
 	$('.featured').removeClass('featured');
+	console.clear();
 	var x = +el.getAttribute('posX'),
 		y = +el.getAttribute('posY');
 	var next = $(`[posX = ${x}][posY = ${y}]`);
 	var _continue = true;
-
-	if (isWhite() && y == 8 && !is_damka) {
-		$('.selected').addClass('damka');
-	}
-	if (isBlack() && y == 1 && !is_damka) {
-		$('.selected').addClass('damka');
-	}
 
 	if (is_damka) {
 		next.append(`<div class = "${color} damka"></div>`);
@@ -440,6 +445,12 @@ function stepIn(el, color, is_damka) {
 		next.append(`<div class = "${color}"></div>`);
 	}
 
+	if (is_white && y == 8 && !is_damka) {
+		next.children().addClass('damka');
+	}
+	if (is_black && y == 1 && !is_damka) {
+		next.children().addClass('damka');
+	}
 
 	if (next.hasClass('kill')) {
 		var killX = +next.attr('killX'),
@@ -508,9 +519,10 @@ function endGame() {
 	$('*').unbind();
 	console.log('Game ended');
 	turn = 1;
+	var agree = confirm('Start again?');
 	setTimeout(() => {
-		var agree = confirm('Start again?');
 		if (agree) {
+			gameOn = true;
 			startGame();
 		}
 	}, 200)
