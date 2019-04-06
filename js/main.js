@@ -1,9 +1,22 @@
 $(document).ready(function() {
-	drawCells();
-	startGame();
+	drawMainMenu();
+	// drawCells();
+	// startGame();
 });
 
+function drawMainMenu() {
+	$('.field').remove();
+	$('.menu').show();
+	$('#1vs1on1').click(function(event) {
+		drawCells();
+		startGame();
+	});
+}
+
 function drawCells() {
+	$('.menu').hide();
+	$('.container').append('<div class="field"></div>');
+
 	var n = 100, //num of cells
 		letter = ["A", "B", "C", "D", "E", "F", "G", "H"];
 
@@ -100,10 +113,11 @@ var gameOn = true;
 var turn = 1;
 var currColor = false;
 
-function startGame() {
-	turn = 1;
-	spawnCheckers(12);
+function startGame(mode = 1) {
+	gameOn = true;
 	$('.container').prepend('<h1></h1>');
+	turn = 1;
+	spawnCheckers();
 
 	run(turn);
 }
@@ -114,7 +128,7 @@ function run(turn) {
 	$('.available_to_choose').removeClass('available_to_choose');
 	$('.must_to_choose').removeClass('must_to_choose');
 
-	if ($('.white').eq(0)[0] == undefined || $('.black').eq(0)[0] == undefined) {
+	if ($('.white').get(0) == undefined || $('.black').get(0) == undefined) {
 		gameOn = false;
 	} else{
 		if (turn % 2 != 0) {
@@ -143,7 +157,6 @@ function BlackTurn() {
 	$('h1').html('Turn: black');
 	$('.black').addClass('available_to_choose');
 	currColor = 'black';
-	SmthHasEnemy()
 	if (!SmthHasEnemy()) {
 		setPickedPiece();	
 	}
@@ -228,14 +241,15 @@ function getDamkaSteps(cx, cy) {
 			}
 
 			if (thisEl.children().get(0) != undefined && !thisEl.children().hasClass(`${currColor}`)) {
+
 				if (getStepAfterEnemy(ax + vars[i][0], ay + vars[i][1], ax, ay)) {
-					// drawFeatured([], [], [$(`[posX = ${ax - vars[i][0]}][posY = ${ay - vars[i][1]}]`)], []);
 					result = [$(`[posX = ${ax - vars[i][0]}][posY = ${ay - vars[i][1]}]`)];
 					_continue = false;
 					break;
 				}
 			}
-			else if (thisEl.children().hasClass(`${currColor}`)) {
+
+			if (thisEl.children().get(0) != undefined) {
 				result.pop();
 				break;
 			}
@@ -279,13 +293,10 @@ function getNextStep(cx, cy) {
 
 	if (!isDamka()) {
 		var a_all_s = getAllSteps(cx, cy);
-
-		var enemies = getEnemies(cx, cy, a_all_s);
 	} else{
 		var a_all_s = a_damka_s;
-
-		var enemies = getEnemies(cx, cy, a_all_s);
 	}
+	var enemies = getEnemies(cx, cy, a_all_s);
 
 	//delete featured cells on the enemy position
 
@@ -366,7 +377,6 @@ function getStepAfterEnemy(cx, cy, ex, ey) {
 	}
 	else if (ey == cy + 1 && ex == cx - 1) { //top left
 		var result = $(`[posX = ${ex - 1}][posY = ${ey + 1}]`);
-		
 	}
 	else if (ey == cy - 1 && ex == cx + 1) { //bottom right
 		var result = $(`[posX = ${ex + 1}][posY = ${ey - 1}]`);
@@ -433,7 +443,6 @@ function setFeaturedClickable() {
 
 function stepIn(el, color, is_white, is_black, is_damka) {
 	$('.featured').removeClass('featured');
-	console.clear();
 	var x = +el.getAttribute('posX'),
 		y = +el.getAttribute('posY');
 	var next = $(`[posX = ${x}][posY = ${y}]`);
@@ -500,10 +509,13 @@ function hasMoreAvailableKills(x, y) {
 }
 
 function getWinner() {
-	if ($('.white').eq(0).get(0) == undefined) {
+	if ($('.white').get(0) == undefined) {
 		return 'black';
-	} else if ($('.black').eq(0).get(0) == undefined) {
+	} 
+	else if ($('.black').get(0) == undefined) {
 		return 'white';
+	} else{
+		return 'tie';
 	}
 }
 
@@ -522,8 +534,9 @@ function endGame() {
 	var agree = confirm('Start again?');
 	setTimeout(() => {
 		if (agree) {
-			gameOn = true;
 			startGame();
+		} else{
+			drawMainMenu();
 		}
 	}, 200)
 }
