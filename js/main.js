@@ -1,7 +1,5 @@
 $(document).ready(function() {
 	drawMainMenu();
-	// drawCells();
-	// startGame();
 });
 
 function drawMainMenu() {
@@ -9,7 +7,7 @@ function drawMainMenu() {
 	$('.menu').show();
 	$('#1vs1on1').click(function(event) {
 		drawCells();
-		startGame();
+		startGame(1);
 	});
 }
 
@@ -78,6 +76,10 @@ function spawnCheckers(n = 12) {
 		white[i].append(`<div class = "white"></div>`);
 		black[i].append(`<div class = "black"></div>`);
 	}
+}
+
+function spawnAt(x, y, color) {
+	$(`[posX = ${x}][posY = ${y}]`).append(`<div class = '${color}'></div>`);
 }
 
 function deleteCheckers() {
@@ -187,8 +189,15 @@ function SmthHasEnemy() {
 		}
 
 		if (isDamka(arr.eq(i).children())) {
-			var damka_steps = getDamkaSteps(x, y);
-			if (damka_steps.length <= 4) {
+			var damka_steps = getDamkaSteps(x, y), must = false;
+
+			for (var i = 0; i < damka_steps.length; i++) {
+				if (damka_steps[i].hasClass('kill')) {
+					must = true;
+				}
+			}
+
+			if (must == true) {
 				$('.available_to_choose').removeClass('available_to_choose');
 				$(`[posX = ${x}][posY = ${y}]`).children().addClass('must_to_choose');
 			}
