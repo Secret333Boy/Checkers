@@ -233,14 +233,14 @@ function getAllSteps(cx, cy) {
 function getDamkaSteps(cx, cy) {
 	var result = [], state = true, _continue = true;
 	var vars = [[1, 1], [-1, -1], [1, -1], [-1, 1]];
-	var n = 1, h = 1;
+	var x_offset = 1, y_offset = 1;
 
 	for (var i = 0; i < vars.length; i++) {
 		while (state && _continue) {
-			var ax = cx - n * vars[i][0];
-			n++;
-			var ay = cy - h * vars[i][1];
-			h++;
+			var ax = cx - x_offset * vars[i][0];
+			x_offset++;
+			var ay = cy - y_offset * vars[i][1];
+			y_offset++;
 			var thisEl = $(`[posX = ${ax}][posY = ${ay}]`);
 
 			if (thisEl.get(0) == undefined) {
@@ -250,7 +250,6 @@ function getDamkaSteps(cx, cy) {
 			}
 
 			if (thisEl.children().get(0) != undefined && !thisEl.children().hasClass(`${currColor}`)) {
-
 				if (getStepAfterEnemy(ax + vars[i][0], ay + vars[i][1], ax, ay)) {
 					result = [$(`[posX = ${ax - vars[i][0]}][posY = ${ay - vars[i][1]}]`)];
 					_continue = false;
@@ -265,8 +264,8 @@ function getDamkaSteps(cx, cy) {
 		}
 
 		state = true;
-		n = 1; 
-		h = 1;
+		x_offset = 1; 
+		y_offset = 1;
 	}
 
 	return result;
@@ -419,14 +418,14 @@ function drawFeatured(white, black, kill_steps, damka_steps = []) {
 				black[i].addClass('featured');
 			}
 		}
-	}
-	
-	for (var i = 0; i < kill_steps.length; i++) {
-		kill_steps[i].addClass('featured');
-	}
+	} else{
+		for (var i = 0; i < kill_steps.length; i++) {
+			kill_steps[i].addClass('featured');
+		}
 
-	for (var i = 0; i < damka_steps.length; i++) {
-		damka_steps[i].addClass('featured');
+		for (var i = 0; i < damka_steps.length; i++) {
+			damka_steps[i].addClass('featured');
+		}
 	}
 }
 
