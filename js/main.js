@@ -190,6 +190,7 @@ function SmthHasEnemy() {
 
 		} else{
 			var damka_steps = getDamkaSteps(x, y);
+			console.log(damka_steps);
 
 			for (var j = 0; j < damka_steps.length; j++) {
 				if (damka_steps[j].hasClass('kill')) {
@@ -201,7 +202,6 @@ function SmthHasEnemy() {
 
 		if (must) {
 			$(thisEl).children().addClass('must_to_choose');
-			console.log('YES');
 		}
 
 		$('.kill').removeClass('kill');
@@ -257,27 +257,37 @@ function getDamkaSteps(cx, cy, vars = [[1, 1], [-1, 1], [-1, -1], [1, -1]], def 
 				result.push(thisEl);
 			}
 
-			if (thisEl.children().get(0) != undefined && !thisEl.children().hasClass(`${currColor}`) && def) {
-				if (getStepAfterEnemy(ax - vars[i][0], ay - vars[i][1], ax, ay, true /*is_damka*/)) {
+			if (thisEl.children().get(0) != undefined && thisEl.children().hasClass(currColor)) {
+				result.pop();
+				break;
+			}
+
+			if (!def && thisEl.children().get(0) != undefined) {
+				result.pop();
+				state = false;
+				break;
+			}
+
+			if (thisEl.children().get(0) != undefined && !thisEl.children().hasClass(currColor) & def) {
+				if (getStepAfterEnemy(ax + vars[i][0], ay + vars[i][1], ax, ay, true /*is_damka*/)) {
 					result = getDamkaSteps(ax, ay, [[vars[i][0], vars[i][1]]], false);
 
-					for (var j = 0; j < result.length; j++) {
-						result[j].addClass('kill');
+					if (result[0] == undefined) {
+						result = getDamkaSteps(cx, cy, vars, false);
+					} else{
+						for (var j = 0; j < result.length; j++) {
+							result[j].addClass('kill');
 
-						result[j].attr({
-							killX: `${ax}`,
-							killY: `${ay}`
-						});
+							result[j].attr({
+								killX: `${ax}`,
+								killY: `${ay}`
+							});
+						}
 					}
 
 					_continue = false;
 					break;
 				}
-			}
-
-			if (thisEl.children().get(0) != undefined && thisEl.children().hasClass(`${currColor}`)) {
-				result.pop();
-				break;
 			}
 		}
 
