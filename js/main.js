@@ -73,8 +73,8 @@ function spawnCheckers(n = 12) {
 	$('[posX = 8][posY = 8]')];
 
 	for (var i = 0; i < n; i++) {
-		white[i].append(`<div class = "white damka"></div>`);
-		black[i].append(`<div class = "black damka"></div>`);
+		white[i].append(`<div class = "white"></div>`);
+		black[i].append(`<div class = "black"></div>`);
 	}
 }
 
@@ -119,7 +119,7 @@ function startGame(mode = 1) {
 	gameOn = true;
 	$('.container').prepend('<h1></h1>');
 	turn = 1;
-	spawnCheckers(3);
+	spawnCheckers();
 
 	run(turn);
 }
