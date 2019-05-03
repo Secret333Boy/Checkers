@@ -78,6 +78,8 @@ function spawnCheckers(n = 12) {
 	}
 }
 
+///////////////////////////////////////////////////////
+
 function spawnAt(x, y, color) {
 	$(`[posX = ${x}][posY = ${y}]`).append(`<div class = '${color}'></div>`);
 }
@@ -87,12 +89,12 @@ function deleteCheckers() {
 	$('.black').remove();
 }
 
-function getX() {
-	return +$(`.selected`).parent().attr('posX');
+function getX(el = $('.selected')) {
+	return +el.parent().attr('posX');
 }
 
-function getY() {
-	return +$(`.selected`).parent().attr('posY');
+function getY(el = $('.selected')) {
+	return +el.parent().attr('posY');
 }
 
 function isWhite(el = $('.selected')) {
@@ -104,12 +106,30 @@ function isBlack(el = $('.selected')) {
 }
 
 function isDamka(el = $('.selected')) {
-	if (el.hasClass('damka')) {
-		return true;
-	} else{
-		return false;
-	}
+	return el.hasClass('damka');
 }
+
+function getElementByCoords(x, y) {
+	return $(`[posX = ${x}][posY = ${y}]`);
+}
+
+function getChild (el) {
+	return el.children();
+}
+
+function isDefined (smth) {
+	return smth !== undefined;
+}
+
+function getAllCheckers(color) {
+	let result = [];
+	for (var i = 0; i < $(`.${color}`).get().length; i++) {
+		result.push($(`.${color}`).eq(i));
+	}
+	return result;
+}
+///////////////////////////////////////////////
+
 
 var gameOn = true;
 var turn = 1;
@@ -142,77 +162,75 @@ function run(turn) {
 		}
 	}
 
-	if (gameOn == false) {
+	if (gameOn === false) {
 		setWinner();
-		setTimeout(endGame, 2000);
+		setTimeout(endGame, 1500);
 	}
 }
 
 function WhiteTurn() {
 	$('h1').html('Turn: white');
-	$('.white').addClass('available_to_choose');
 	currColor = 'white';
 	if (!SmthHasEnemy()) {
-		setPickedPiece();
+		$('.white').addClass('available_to_choose');
 	}
+	setPickedPiece();
 }
 
 function BlackTurn() {
 	$('h1').html('Turn: black');
-	$('.black').addClass('available_to_choose');
 	currColor = 'black';
 	if (!SmthHasEnemy()) {
-		setPickedPiece();	
+		$('.black').addClass('available_to_choose');
 	}
+	setPickedPiece();
 }
 
 function SmthHasEnemy() {
-	var arr = $('.available_to_choose').parent().get(), result = false, a_kill_s = [];
+	let result = false;
+	let checkers = getAllCheckers(currColor);
+	let kill = [];
 
-	for (var i = 0; i < arr.length; i++) {
-		var thisEl = $(arr[i]),
-			x = +$(arr[i]).attr('posX'), y = +$(arr[i]).attr('posY'),
-			must = false;
+	for (var i = 0; i < checkers.length; i++) {
+		let cx = getX(checkers[i]);
+		let cy = getY(checkers[i]);
 
-		if (!isDamka(thisEl.children())) {
-			var enemies = getEnemies(x, y, getAllSteps(x, y));
+		let enemies = getEnemies(cx, cy, getAllSteps(cx, cy));
 
+		if (isDefined(enemies[0])) {
 			for (var j = 0; j < enemies.length; j++) {
-				var ex = +enemies[j].attr('posX');
-				var ey = +enemies[j].attr('posY');
+				let ex = +enemies[j].attr("posX");
+				let ey = +enemies[j].attr("posY");
 
-				if (getStepAfterEnemy(x, y, ex, ey)) {
-					a_kill_s.push(getStepAfterEnemy(x, y, ex, ey));
-					result = true;
-					must = true;
-				}
-			}
-
-		} else{
-			var damka_steps = getDamkaSteps(x, y);
-			console.log(damka_steps);
-
-			for (var j = 0; j < damka_steps.length; j++) {
-				if (damka_steps[j].hasClass('kill')) {
-					must = true;
+				if (getStepAfterEnemy(cx, cy, ex, ey)) {
+					setPriority(checkers[i]);
+					kill.push(getStepAfterEnemy(cx, cy, ex, ey));
 					result = true;
 				}
 			}
 		}
 
-		if (must) {
-			$(thisEl).children().addClass('must_to_choose');
+		if (isDamka(checkers[i])) {
+			let damkaSteps = getDamkaSteps(cx, cy);
+
+			for (var j = 0; j < damkaSteps.length; j++) {
+				if (damkaSteps[j].hasClass("must->" + cx + "|" + cy)) {
+					damkaSteps[j].removeClass("must->" + cx + "|" + cy);
+					setPriority(checkers[i]);
+					kill = damkaSteps;
+					result = true;
+					break;
+				}
+			}
 		}
-
-		$('.kill').removeClass('kill');
-	}
-
-	if (result) {
-		$('.available_to_choose').removeClass('available_to_choose');
-		setPickedPiece();
 	}
 
 	return result;
+}
+
+function setPriority(el) {
+	$('.available_to_choose').removeClass('available_to_choose');
+	el.addClass('must_to_choose');
 }
 
 var pickedPiece;
@@ -238,7 +256,7 @@ function getAllSteps(cx, cy) {
 	return getAvailableSteps(cx, cy)[0].concat(getAvailableSteps(cx, cy)[1]);
 }
 
-function getDamkaSteps(cx, cy, vars = [[1, 1], [-1, 1], [-1, -1], [1, -1]], def = true) {
+function getDamkaSteps(cx, cy, vars = [[1, 1], [-1, 1], [-1, -1], [1, -1]], def = true, prevX, prevY) {
 	var result = [], state = true, _continue = true;
 	var x_offset = 1, y_offset = 1;
 
@@ -248,47 +266,37 @@ function getDamkaSteps(cx, cy, vars = [[1, 1], [-1, 1], [-1, -1], [1, -1]], def 
 			x_offset++;
 			var ay = cy + y_offset * vars[i][1];
 			y_offset++;
-			var thisEl = $(`[posX = ${ax}][posY = ${ay}]`);
+			var thisEl = getElementByCoords(ax, ay);
 
-			if (thisEl.get(0) == undefined) {
-				state = false;
-				break;
-			} else{
-				result.push(thisEl);
-			}
-
-			if (thisEl.children().get(0) != undefined && thisEl.children().hasClass(currColor)) {
-				result.pop();
-				break;
-			}
-
-			if (!def && thisEl.children().get(0) != undefined) {
-				result.pop();
+			if (!isDefined(thisEl.get(0))) {
 				state = false;
 				break;
 			}
 
-			if (thisEl.children().get(0) != undefined && !thisEl.children().hasClass(currColor) & def) {
-				if (getStepAfterEnemy(ax + vars[i][0], ay + vars[i][1], ax, ay, true /*is_damka*/)) {
-					result = getDamkaSteps(ax, ay, [[vars[i][0], vars[i][1]]], false);
-
-					if (result[0] == undefined) {
-						result = getDamkaSteps(cx, cy, vars, false);
-					} else{
-						for (var j = 0; j < result.length; j++) {
-							result[j].addClass('kill');
-
-							result[j].attr({
-								killX: `${ax}`,
-								killY: `${ay}`
-							});
-						}
+			if (isDefined(getChild(thisEl).get(0))) {
+				if (getChild(thisEl).hasClass(currColor)) {
+					state = false;
+					break;
+				} else{
+					if (getStepAfterEnemy(ax - vars[i][0], ay - vars[i][1], ax, ay) && def) {
+						_continue = false;
+						let killSteps = getDamkaSteps(ax, ay, [vars[i]], false, cx, cy);
+						result = killSteps;
 					}
-
-					_continue = false;
 					break;
 				}
 			}
+
+			if (!def) {
+				thisEl.addClass("must->" + prevX + "|" + prevY);
+				thisEl.addClass('kill');
+				thisEl.attr({
+					killX: `${cx}`,
+					killY: `${cy}`
+				});
+			}
+
+			result.push(thisEl);
 		}
 
 		state = true;
@@ -300,96 +308,83 @@ function getDamkaSteps(cx, cy, vars = [[1, 1], [-1, 1], [-1, -1], [1, -1]], def 
 }
 
 function getNextStep(cx, cy) {
+	var current = getElementByCoords(cx, cy);
+	let front = [], back = [], kill = [], damka = [];
 
-	if (!isDamka()) {
-		var a_damka_s = [],
-			a_front_s = getAvailableSteps(cx, cy)[0],
-			a_back_s = getAvailableSteps(cx, cy)[1];
-
-		//check for undefined values
-
-		for (var i = a_front_s.length - 1; i >= 0; i--) {
-			if (a_front_s[i].get(0) == undefined || a_front_s[i].children().hasClass(`${currColor}`)) {
-				a_front_s.splice(i, 1);
-			}
-		}
-
-		for (var i = a_back_s.length - 1; i >= 0; i--) {
-			if (a_back_s[i].get(0) == undefined || a_back_s[i].children().hasClass(`${currColor}`)) {
-				a_back_s.splice(i, 1);
-			}
-		}
+	if (getChild(current).hasClass('damka')) {
+		damka = getDamkaSteps(cx, cy);
 	} else{
-		var a_damka_s = getDamkaSteps(cx, cy),
-			a_front_s = [],
-			a_back_s = [];
+		getNormalSteps(); 
 	}
 
-	//get enemies near the selected piece
 
-	if (!isDamka()) {
-		var a_all_s = getAllSteps(cx, cy);
-	} else{
-		var a_all_s = a_damka_s;
-	}
-	var enemies = getEnemies(cx, cy, a_all_s);
+	function getNormalSteps() {
+		let frontStepsVars = [[1, 1], [-1, 1]];
+		let backStepsVars = [[1, -1], [-1, -1]];
 
-	//delete featured cells on the enemy position
+		for (var i = 0; i < 2; i++) {
+			let el = getElementByCoords(cx + frontStepsVars[i][0], cy + frontStepsVars[i][1]);
+			if (el) {
+				front.push(el);
 
-	for (var i = a_front_s.length - 1; i >= 0; i--) {
-		for (var j = 0; j < enemies.length; j++) {
-			if (a_front_s[i] != undefined) {
-				if (a_front_s[i].get(0) == enemies[j].get(0)) {
-					a_front_s.splice(i, 1);
+				if (isDefined(getChild(el).get(0))) {
+					if (getChild(el).hasClass(currColor)) {
+						//it is friend
+						front.pop();
+					} else{
+						//it is enemy
+						let enemies = getEnemies(cx, cy, getAllSteps(cx, cy));
+
+						for (var i = 0; i < enemies.length; i++) {
+							let ex = +enemies[i].attr("posX");
+							let ey = +enemies[i].attr("posY");
+
+							let killStep = getStepAfterEnemy(ex, ey);
+							if (killStep) {
+								kill.push(killStep);
+							} else{
+								front.pop();
+							}
+						}
+					}
+				}
+			}
+		}
+
+		for (var i = 0; i < backStepsVars.length; i++) {
+			let el = getElementByCoords(cx + backStepsVars[i][0], cy + backStepsVars[i][1]);
+			if (el) {
+				back.push(el);
+
+				if (isDefined(getChild(el).get(0))) {
+					if (getChild(el).hasClass(currColor)) {
+						//it is friend
+						back.pop();
+					} else{
+						//it is enemy
+						let enemies = getEnemies(cx, cy, getAllSteps(cx, cy));
+
+						for (var i = 0; i < enemies.length; i++) {
+							let ex = +enemies[i].attr("posX");
+							let ey = +enemies[i].attr("posY");
+
+							let killStep = getStepAfterEnemy(ex, ey);
+							if (killStep) {
+								kill.push(killStep);
+							} else{
+								back.pop();
+							}
+						}
+					}
 				}
 			}
 		}
 	}
 
-	for (var i = a_back_s.length - 1; i >= 0; i--) {
-		for (var j = 0; j < enemies.length; j++) {
-			if (a_back_s[i] != undefined) {
-				if (a_back_s[i].get(0) == enemies[j].get(0)) {
-					a_back_s.splice(i, 1);
-				}
-			}
-		}
-	}
 
-	for (var i = a_damka_s.length - 1; i >= 0; i--) {
-		for (var j = 0; j < enemies.length; j++) {
-			if (a_damka_s[i] != undefined) {
-				if (a_damka_s[i].get(0) == enemies[j].get(0)) {
-					a_damka_s.splice(i, 1);
-				}
-			}
-		}
-	}
 
-	//get steps after the enemy and checking for undefined values
 
-	var a_kill_s = [];
-	if (!isDamka()) {
-		for (var i = 0; i < enemies.length; i++) {
-			var ex = +enemies[i].attr('posX'),
-				ey = +enemies[i].attr('posY');
-			if (getStepAfterEnemy(cx, cy, ex, ey) != false) {
-				a_kill_s.push(getStepAfterEnemy(cx, cy, ex, ey));
-			}
-		}
-	}
-
-	// console.log('ENEMIES');
-	// console.log(enemies);
-	// console.log('Front steps:');
-	// console.log(a_front_s);
-	// console.log('Back steps:');
-	// console.log(a_back_s);
-	// console.log('Damka steps:');
-	// console.log(a_damka_s);
-	// console.log('\n');
-
-	drawFeatured(a_front_s, a_back_s, a_kill_s, a_damka_s);
+	drawFeatured(front, back, kill, damka);
 	setFeaturedClickable();
 }
 
@@ -399,7 +394,7 @@ function getEnemies(cx, cy, steps) {
 
 	for (var i = 0; i < available_enemies.length; i++) {
 		var ae = available_enemies[i];
-		if (ae.children()[0] != undefined && !ae.children('div').hasClass(`${currColor}`)) {
+		if (isDefined(getChild(ae).get(0)) && !getChild(ae).hasClass(currColor)) {
 			result.push(ae);
 		}
 	}
@@ -407,22 +402,30 @@ function getEnemies(cx, cy, steps) {
 	return result;
 }
 
-function getStepAfterEnemy(cx, cy, ex, ey, is_damka) {
-	var Gresult = false;
-	if (ey == cy + 1 && ex == cx + 1) { //top right
-		var result = $(`[posX = ${ex + 1}][posY = ${ey + 1}]`);
-	}
-	else if (ey == cy + 1 && ex == cx - 1) { //top left
-		var result = $(`[posX = ${ex - 1}][posY = ${ey + 1}]`);
-	}
-	else if (ey == cy - 1 && ex == cx + 1) { //bottom right
-		var result = $(`[posX = ${ex + 1}][posY = ${ey - 1}]`);
-	}
-	else if (ey == cy - 1 && ex == cx - 1) { //bottom left
-		var result = $(`[posX = ${ex - 1}][posY = ${ey - 1}]`);
+function getStepAfterEnemy(cx, cy , ex, ey, is_damka) {
+	if (!ex && !ey) {
+		ex = cx;
+		ey = cy;
+		cx = getX();
+		cy = getY();
 	}
 
-	if (result != undefined && result.children().get(0) == undefined && result.get(0) != undefined) {
+
+	var Gresult = false, result;
+	if (ey == cy + 1 && ex == cx + 1) { //top right
+		result = getElementByCoords(ex + 1, ey + 1);
+	}
+	else if (ey == cy + 1 && ex == cx - 1) { //top left
+		result = getElementByCoords(ex - 1, ey + 1);
+	}
+	else if (ey == cy - 1 && ex == cx + 1) { //bottom right
+		result = getElementByCoords(ex + 1, ey - 1);
+	}
+	else if (ey == cy - 1 && ex == cx - 1) { //bottom left
+		result = getElementByCoords(ex - 1, ey - 1);
+	}
+
+	if (isDefined(result) && !isDefined(getChild(result).get(0)) && isDefined(result.get(0))) {
 		if (!is_damka) {
 			result.addClass('kill');
 			result.attr({
@@ -438,15 +441,15 @@ function getStepAfterEnemy(cx, cy, ex, ey, is_damka) {
 }
 
 function drawFeatured(white, black, kill_steps, damka_steps = []) {
-	if (kill_steps[0] == undefined && damka_steps[0] == undefined) {
+	if (!isDefined(kill_steps[0]) && !isDefined(damka_steps[0])) {
 		for (var i = 0; i < white.length; i++) {
-			if (isWhite($('.selected'))) {
+			if (isWhite()) {
 				white[i].addClass('featured');
 			}
 		}
 
 		for (var i = 0; i < black.length; i++) {
-			if (isBlack($('.selected'))) {
+			if (isBlack()) {
 				black[i].addClass('featured');
 			}
 		}
@@ -468,8 +471,8 @@ function setFeaturedClickable() {
 		var is_white = isWhite();
 		var is_black = isBlack();
 
-
 		$('.selected').remove();
+
 		var _continue = stepIn(this, currColor, is_white, is_black, is_damka);
 		if (_continue) {
 			$('.kill').removeAttr('killX');
@@ -485,7 +488,7 @@ function stepIn(el, color, is_white, is_black, is_damka) {
 	$('.featured').removeClass('featured');
 	var x = +el.getAttribute('posX'),
 		y = +el.getAttribute('posY');
-	var next = $(`[posX = ${x}][posY = ${y}]`);
+	var next = getElementByCoords(x, y);
 	var _continue = true;
 
 	if (is_damka) {
@@ -495,10 +498,10 @@ function stepIn(el, color, is_white, is_black, is_damka) {
 	}
 
 	if (is_white && y == 8 && !is_damka) {
-		next.children().addClass('damka');
+		getChild(next).addClass('damka');
 	}
 	if (is_black && y == 1 && !is_damka) {
-		next.children().addClass('damka');
+		getChild(next).addClass('damka');
 	}
 
 	if (next.hasClass('kill')) {
@@ -506,7 +509,7 @@ function stepIn(el, color, is_white, is_black, is_damka) {
 			killY = +next.attr('killY');
 
 
-		$(`[posX = ${killX}][posY = ${killY}]`).empty();
+		getElementByCoords(killX, killY).empty();
 
 		if (hasMoreAvailableKills(x, y)) { //two kills in one step
 			var enemies = getEnemies(x, y, getAllSteps(x, y)), kill_steps = [];
@@ -523,7 +526,7 @@ function stepIn(el, color, is_white, is_black, is_damka) {
 
 			$('.available_to_choose').unbind();
 
-			next.children().addClass('selected');
+			getChild(next).addClass('selected');
 
 			drawFeatured([], [], kill_steps);
 			setFeaturedClickable();
@@ -534,12 +537,12 @@ function stepIn(el, color, is_white, is_black, is_damka) {
 }
 
 function hasMoreAvailableKills(x, y) {
+	let result = false;
 	var enemies = getEnemies(x, y, getAllSteps(x, y));
-	var result = false;
 
 	for (var i = 0; i < enemies.length; i++) {
-		var ex = +enemies[i].attr('posX'),
-			ey = +enemies[i].attr('posY');
+		ex = +enemies[i].attr("posX");
+		ey = +enemies[i].attr("posY");
 		if (getStepAfterEnemy(x, y, ex, ey)) {
 			result = true;
 		}
